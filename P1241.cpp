@@ -1,50 +1,75 @@
-#include <iostream>
-#include <stack>
-#include <string>
+#include "iostream"
+#include "string"
+#include "vector"
+#include "stack"
 using namespace std;
+class par
+{
+public:
+    char t;
+    int id;
+};
 int main()
 {
-    string arr;
-    cin >> arr;
-    string::iterator p = arr.begin();
-    stack<char> tone;
-    string ans;
-    while(p<arr.end())
+    string s;
+    cin >> s;
+    vector<par> arr(s.size());
+    for(int i = 0;i<s.size();i++)
     {
-        if(tone.empty()) 
+        arr[i].t = s[i];
+        arr[i].id = i;
+    }
+    stack<par> temp;
+    vector<bool> brr(s.size(),false);
+    for(par& a:arr)
+    {
+        switch(a.t)
         {
-            tone.push(*p);
-            p++;
-            continue;
+        case '(':
+        case '[':
+            temp.push(a);
+            break;
+        case ')':
+            if(!temp.empty()&&temp.top().t=='(')
+            {
+                brr[a.id] = true;
+                brr[temp.top().id] = true;
+                temp.pop();
+            }
+            break;
+        case ']':
+            if(!temp.empty()&&temp.top().t=='[')
+            {
+                brr[a.id] = true;
+                brr[temp.top().id] = true;
+                temp.pop();
+            }
+            break;
+        }
+    }
+    string ans = "";
+    for(int i = 0;i<brr.size();i++)
+    {
+        if(brr[i])
+        {
+            ans += s[i];
         }
         else
         {
-            if(*p=='('||*p=='[') tone.push(*p);
-            else if(*p==')'&&tone.top()!='('||*p==']'&&tone.top()!='[') tone.push(*p);
-            else
+            switch(s[i])
             {
-                ans+=*p;
-                ans = tone.top()+ans;
-                tone.pop();
+            case '(':
+            case ')':
+                ans += "()";
+                break;
+            case '[':
+            case ']':
+                ans += "[]";
+                break;
             }
-            p++;
         }
-    }
-    while(!tone.empty())
-    {
-        switch (tone.top())
-        {
-        case '(':
-        case ')':
-            ans = "()" + ans;
-            break;
-        case '[':
-        case ']':
-            ans = "[]" + ans;
-            break;
-        }
-        tone.pop();
     }
     cout << ans << endl;
+
     return 0;
 }
