@@ -1,5 +1,7 @@
 .vscode/
+.claude/
 .cph/
 program/
 build/
 bu
+*.exe
