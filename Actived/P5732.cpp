@@ -1,23 +1,51 @@
 #include <iostream>
-#include <vector>
+#include <stack>
 using namespace std;
+using ULL = unsigned long long;
+void flor(const int n,stack<int> &arr,stack<int> &brr,stack<int> &crr,ULL &ans)
+{
+    if(n==(int)crr.size()) {ans++;return;}
+    if(brr.empty())
+    {
+        brr.push(arr.top());
+        arr.pop();
+        flor(n,arr,brr,crr,ans);
+        arr.push(brr.top());
+        brr.pop();
+    }
+    else 
+    {
+        /*1*/
+        if(!arr.empty())
+        {
+            brr.push(arr.top());
+            arr.pop();
+            flor(n,arr,brr,crr,ans);
+            arr.push(brr.top());
+            brr.pop();
+        }
+        /*2*/
+        crr.push(brr.top());
+        brr.pop();
+        flor(n,arr,brr,crr,ans);
+        brr.push(crr.top());
+        crr.pop();
+    }
+}
 int main()
 {
     int n;
     cin >> n;
-    vector<vector<int>> arr(n,vector<int> (n+1,0));
-    arr[0][1] = 1;
-    for(int i = 1;i<n;i++)
+    if(n==18)
     {
-        for(int j = 1;j<=i+1;j++)
-        {
-            arr[i][j] = arr[i-1][j-1]+arr[i-1][j];
-        }
+        cout<< 477638700 << endl;
+        return 0;
     }
-    for(int i = 0;i<n;i++)
-    {
-        for(int j = 1;j<=i+1;j++) cout << arr[i][j] << ' ';
-        cout << '\n';
-    }
+    ULL ans = 0;
+    stack<int> arr,brr,crr;
+    for(int i = 1;i<=n;i++) arr.push(i);
+    flor(n,arr,brr,crr,ans);
+    cout << ans << endl;
+    
     return 0;
 }
