@@ -6,4 +6,5 @@ build/
 bu
 *.exe
 *.txt
+*.bat
 *.sh

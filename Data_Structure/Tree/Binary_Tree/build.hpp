@@ -39,6 +39,7 @@ public:
 private:
     void Init()
     {
+        root = new Node();
         root->data = 'A';
         root->Lchild = new Node('B');
         root->Lchild->parent = root;
