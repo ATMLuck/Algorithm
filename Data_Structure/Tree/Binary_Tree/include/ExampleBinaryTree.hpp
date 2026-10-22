@@ -1,4 +1,5 @@
 #pragma once
+#include <utility>
 /*
             A
           /   \
@@ -18,16 +19,13 @@ struct Node
     Node* Lchild = nullptr;
     Node* Rchild = nullptr;
     Node* parent = nullptr;
-    Node(char str)
-    {
-        this->data = str;
-    }
-    Node(){}
+    Node(char str) {this->data = str;}
+    Node(){this->data = '*';}
 };
 class ExampleBinaryTree
 {
 public:
-    Node *root;
+    Node *root = nullptr;
     ExampleBinaryTree()
     {
         Init();
@@ -36,11 +34,23 @@ public:
     {
         Distroy(root);
     }
+    ExampleBinaryTree(const ExampleBinaryTree& _tree)
+    {
+        copy(_tree.root,root);
+    }
+    ExampleBinaryTree& operator=(const ExampleBinaryTree& other)
+    {
+        if (this != &other) 
+        {
+            ExampleBinaryTree tmp(other);
+            std::swap(root, tmp.root);
+        }
+        return *this;
+    }
 private:
     void Init()
     {
-        root = new Node();
-        root->data = 'A';
+        root = new Node('A');
         root->Lchild = new Node('B');
         root->Lchild->parent = root;
         root->Rchild = new Node('C');
@@ -78,5 +88,14 @@ private:
         Distroy(vir->Lchild);
         Distroy(vir->Rchild);
         delete vir;
+    }
+    void copy(const Node* vir,Node* &_vir)
+    {
+        if(vir==nullptr) return;
+        _vir = new Node(vir->data);
+        copy(vir->Lchild,_vir->Lchild);
+        copy(vir->Rchild,_vir->Rchild);
+        if(_vir->Lchild != nullptr) _vir->Lchild->parent = _vir;
+        if(_vir->Rchild != nullptr) _vir->Rchild->parent = _vir;
     }
 };
