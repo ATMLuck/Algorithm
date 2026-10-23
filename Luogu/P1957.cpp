@@ -19,6 +19,10 @@ string func(int mode,string a,string b)
         tmp+="-";
         ans = -ans;
     }
+    if(ans == 0)
+    {
+        _ans = "0";
+    }
 
     while(ans!=0)
     {
