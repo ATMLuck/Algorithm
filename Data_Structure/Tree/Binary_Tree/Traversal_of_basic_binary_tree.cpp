@@ -4,6 +4,7 @@
 #include <queue>
 
 using namespace std;
+using namespace Example;
 //============DFS============
 //=======前序遍历=======
 void preorder_use_stack(const ExampleBinaryTree &tree)
