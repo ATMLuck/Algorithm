@@ -73,7 +73,7 @@ namespace BST
                 return false;
             }
         }
-        const Node* Find(int _data) const
+        const Node* Find(int _data)
         {
             return find(_data,root);
         }
