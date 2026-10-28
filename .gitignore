@@ -1,6 +1,7 @@
 .vscode/
 .claude/
 .cph/
+.temp/
 program/
 build/
 bu
