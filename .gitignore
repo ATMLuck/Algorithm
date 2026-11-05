@@ -5,6 +5,7 @@
 program/
 build/
 bu
+docs/
 *.exe
 *.txt
 *.bat
