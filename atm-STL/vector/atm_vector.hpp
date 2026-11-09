@@ -134,11 +134,12 @@ namespace atm
             _destroy_all();
             if(_begin!=nullptr) traits::deallocate(_alloc,_begin,_cap-_begin);
         }
-        vector& operator=(vector other)
+        vector& operator=(vector other) noexcept
         {
             _swap(*this,other);
             return *this;
         }
+
         size_type size() const noexcept {return _end-_begin;}
         size_type capacity() const noexcept {return _cap-_begin;}
         const T* begin() const noexcept {return _begin;}
@@ -147,5 +148,7 @@ namespace atm
         T* end() noexcept {return _end;}
         const T* cap() const noexcept {return _cap;}
         T* cap() noexcept {return _cap;}
+        
+        
     };
 }
