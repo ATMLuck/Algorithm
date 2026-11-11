@@ -1,9 +1,9 @@
 #pragma once
 #include <cstddef>
-#include <ctime>
 #include <memory>
 #include <stdexcept>
 #include <utility>
+#include <new>
 namespace atm
 {
     template<typename T, class Alloc = std::allocator<T>>
@@ -58,6 +58,47 @@ namespace atm
             std::swap(a._end,b._end);
             std::swap(a._cap,b._cap);
             std::swap(a._alloc,b._alloc);
+        }
+        bool check_n(size_type n)
+        {
+            
+        }
+        T* _migrate(T* first, T* last, T* dst)
+        {
+            if constexpr (std::is_nothrow_move_constructible_v<T> ||
+                  !std::is_copy_constructible_v<T>)
+            {
+                return std::uninitialized_copy(
+                std::make_move_iterator(first),
+                std::make_move_iterator(last),dst);
+            }
+            else
+            {
+                return std::uninitialized_copy(first, last, dst);
+            }
+        }
+        void _realloc()
+        {
+            size_type new_capacity_size = this->capacity()>0?2*capacity():15;
+            T* new_begin = traits::allocate(_alloc,new_capacity_size);
+            T* new_capacity = new_begin+new_capacity_size;
+            T* new_end = nullptr;
+            try
+            {
+                new_end = _migrate(_begin, _end, new_begin);
+            }
+            catch(...)
+            {
+                throw std::bad_alloc();
+            }
+            for(T* i= _begin;i!=_end;i++)
+            {
+                traits::destroy(_alloc,i);
+            }
+            if(_begin!=nullptr) traits::deallocate(_alloc,_begin,capacity());
+            _begin = new_begin;
+            _end = new_end;
+            _cap = new_capacity;
         }
     public:
         vector()
@@ -148,6 +189,7 @@ namespace atm
         T* end() noexcept {return _end;}
         const T* cap() const noexcept {return _cap;}
         T* cap() noexcept {return _cap;}
+
         
         
     };
