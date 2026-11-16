@@ -1,73 +1,111 @@
 #include <iostream>
+#include <iomanip>
 #include <vector>
-#include <queue>
+#include <cstdlib>
 #include <algorithm>
 using namespace std;
-struct station 
+using db=double;
+class Station
 {
-    double dis;
-    double price;
+public:
+    db dis;
+    db value;
+    Station() = default;
+    Station(db a, db b):dis(a),value(b){}
 };
-struct Oil
+class Oil
 {
-    double cap;
-    double price;
-    Oil(double a,double b):cap(a),price(b){}
-    double GetValue(double a = -1){return (a<cap&&a>0?a:cap)*price;}
+public:
+    db cap;
+    db value;
+    Oil() = default;
+    Oil(db a, db b):cap(a),value(b){}
 };
-struct car
+class Car
 {
-    vector<Oil> oil = {};
-    double C = 0;
-    double C_now = 0;
-    double ans = 0;
-    void check(){sort(oil.begin(),oil.end(),[](Oil a,Oil b)->bool{return a.price<b.price;});}
-    void revert(Oil vir)
+public:
+    vector<Oil> OilBox;
+    db Box_sum;
+    db Box_now;
+    db cost;
+    Car(db C):OilBox({}),Box_sum(C),Box_now(0),cost(0){}
+    void check()
     {
-        ans-=vir.GetValue();
-        C_now-=vir.cap;
+        sort(OilBox.begin(),OilBox.end(),[](Oil a, Oil b)->bool{return a.value<b.value;});
     }
-    void add(station vir)
+    void Go(db dis,db L)
     {
-        for(int i = 0;i<oil.size();i++)
+        if(OilBox.empty()) return;
+        while(!OilBox.empty() && dis>OilBox.begin()->cap*L)
         {
-            if(vir.price<oil[i].price)
+            dis-=OilBox.begin()->cap*L;
+            Box_now-=OilBox.begin()->cap;
+            OilBox.erase(OilBox.begin());
+        }
+        if(OilBox.empty()) { Box_now=0; return; }
+        db use=dis/L;
+        if(use>OilBox.begin()->cap) use=OilBox.begin()->cap;
+        if(use<0) use=0;
+        OilBox.begin()->cap-=use;
+        Box_now-=use;
+    }
+    void Add(const Station &vir)
+    {
+        if(OilBox.empty())
+        {
+            OilBox.push_back(Oil(Box_sum-Box_now,vir.value));
+            cost += (Box_sum-Box_now)*vir.value;
+            Box_now = Box_sum;
+            return;
+        }
+        check();
+        db _value = vir.value;
+        for(int i = 0;i<(int)OilBox.size();++i)
+        {
+            if(_value>OilBox[i].value) continue;
+            for(int j = i;j<(int)OilBox.size();++j)
             {
-                for(int j = i;j<oil.size();j++)
-                {
-                    revert(oil[j]);
-                }
-                oil.resize(i);
-                oil.push_back(Oil(C-C_now,vir.price));
-                C_now = C;
-                return;
+                Box_now-=OilBox[j].cap;
+                cost -= OilBox[j].cap*OilBox[j].value;
             }
+            OilBox.resize(i);
+            break;
         }
-        oil.push_back(Oil(C-C_now,vir.price));
-        C_now = C;
-        ans+=vir.price*(C-C_now);
-    }
-    void Go(double dis,double L)
-    {
-        while(dis>(oil.begin()->cap)*L)
-        {
-            dis-=(oil.begin()->cap)*L;
-            oil.erase(oil.begin());
-        }
-        
+        OilBox.push_back(Oil(Box_sum-Box_now,vir.value));
+        cost += (Box_sum-Box_now)*vir.value;
+        Box_now = Box_sum;
+        check();
     }
 };
-
+void EX()
+{
+    cout << "No Solution" << endl;
+    exit(0);
+}
 int main()
 {
-    double  S,C,L,P0;
+    double S,C,L,P0;
     int N;
-    cin >> S >> C >> L >> P0 >>N;
-    vector<station> arr(N);
-    for(int i;i<N;i++)
+    cin >> S >> C >> L >> P0 >> N;
+    vector<Station> arr;
+    arr.push_back(Station(0,P0));
+    for(int i = 0;i<N;i++)
     {
-        cin >> arr[i].dis >> arr[i].price;
+        Station tmp;
+        cin >> tmp.dis >> tmp.value;
+        arr.push_back(tmp);
     }
-
+    sort(arr.begin(),arr.end(),[](const Station &a,const Station &b){return a.dis<b.dis;});
+    arr.push_back(Station(S,0));
+    Car self(C);
+    db dis_now = 0;
+    for(const Station &now:arr)
+    {
+        if(now.dis-dis_now>self.Box_sum*L+1e-9) EX();
+        self.Go(now.dis-dis_now,L);
+        self.Add(now);
+        dis_now = now.dis;
+    }
+    cout << std::fixed << std::setprecision(2) << self.cost << endl;
     return 0;
 }
