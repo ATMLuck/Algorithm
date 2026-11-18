@@ -11,7 +11,6 @@ void BFS(vector<int> &Ans,queue<pair<string,int>> &BFS_Q,int source_size)
         int step = BFS_Q.front().second;
         int size = num.size();
         BFS_Q.pop();
-        Ans[stoi(num)]=step;
         //swap
         for(int i = 0;i<size;i++)
         {
@@ -23,16 +22,21 @@ void BFS(vector<int> &Ans,queue<pair<string,int>> &BFS_Q,int source_size)
                     swap(vir[i],vir[j]);
                     if(Ans[stoi(vir)]!=-1) continue;
                     BFS_Q.push({vir,step+1});
+                    Ans[stoi(vir)] = step+1;
                 }
             }
         }
         //erase
-        for(int i = 0;i<size;i++)
+        if(size>1)
         {
-            string vir = num;
-            vir.erase(vir.begin()+i);
-            if(Ans[stoi(vir)]!=-1) continue;
-            BFS_Q.push({vir,step+1});
+            for(int i = 0;i<size;i++)
+            {
+                string vir = num;
+                vir.erase(vir.begin()+i);
+                if(Ans[stoi(vir)]!=-1) continue;
+                BFS_Q.push({vir,step+1});
+                Ans[stoi(vir)] = step+1;
+            }
         }
         //add
         if(size<source_size)
@@ -46,7 +50,7 @@ void BFS(vector<int> &Ans,queue<pair<string,int>> &BFS_Q,int source_size)
                     vir.insert(i,1,j);
                     if(Ans[stoi(vir)]!=-1) continue;
                     BFS_Q.push({vir,step+1});
-
+                    Ans[stoi(vir)] = step+1;
                 }
             }
         }
@@ -59,7 +63,7 @@ int main()
 
     cin >> num >> q;
     vector<int> Ans(100000,-1);
-
+    Ans[stoi(num)] = 0;
     queue<pair<string,int>> BFS_Q;
     BFS_Q.push({num,0});
     BFS(Ans,BFS_Q,num.size());
@@ -68,7 +72,7 @@ int main()
     {
         string tmp;
         cin >> tmp;
-        if(Ans[stoi(tmp)!=-1]) output.push(Ans[stoi(tmp)]);
+        if(Ans[stoi(tmp)]!=-1) output.push(Ans[stoi(tmp)]);
         else output.push(-1);
     }
     while(!output.empty()){cout << output.front()<<endl;output.pop();}
