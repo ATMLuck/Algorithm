@@ -59,9 +59,9 @@ namespace atm
             std::swap(a._cap,b._cap);
             std::swap(a._alloc,b._alloc);
         }
-        bool check_n(size_type n)
+        bool check_n(size_type n) noexcept
         {
-            
+            return _cap-_end>=n;
         }
         T* _migrate(T* first, T* last, T* dst)
         {
@@ -80,6 +80,7 @@ namespace atm
         void _realloc()
         {
             size_type new_capacity_size = this->capacity()>0?2*capacity():15;
+            if(new_capacity_size>traits::max_size(_alloc)) new_capacity_size = traits::max_size(_alloc);
             T* new_begin = traits::allocate(_alloc,new_capacity_size);
             T* new_capacity = new_begin+new_capacity_size;
             T* new_end = nullptr;
@@ -89,7 +90,8 @@ namespace atm
             }
             catch(...)
             {
-                throw std::bad_alloc();
+                traits::deallocate(_alloc,new_begin,new_capacity_size);
+                throw;
             }
             for(T* i= _begin;i!=_end;i++)
             {
@@ -99,6 +101,48 @@ namespace atm
             _begin = new_begin;
             _end = new_end;
             _cap = new_capacity;
+        }
+        template<class U>
+        void _append(U&& value)
+        {
+            traits::construct(_alloc,_end,std::forward<U>(value));
+            ++_end;
+        }
+        template<class U>
+        void _realloc_append(U&& value)
+        {
+            size_type new_capacity_size = this->capacity()>0?2*capacity():15;
+            T* new_begin = traits::allocate(_alloc,new_capacity_size);
+            T* new_capacity = new_begin+new_capacity_size;
+            T* new_end = nullptr;
+            try
+            {
+                traits::construct(_alloc,new_begin+(_end-_begin),std::forward<U>(value));
+            }
+            catch(...)
+            {
+                traits::deallocate(_alloc,new_begin,new_capacity_size);
+                throw;
+            }
+            try
+            {
+                new_end = _migrate(_begin, _end, new_begin)+1;
+            }
+            catch(...)
+            {
+                traits::destroy(_alloc,new_begin+(_end-_begin));
+                traits::deallocate(_alloc,new_begin,new_capacity_size);
+                throw;
+            }
+            for(T* i= _begin;i!=_end;i++)
+            {
+                traits::destroy(_alloc,i);
+            }
+            if(_begin!=nullptr) traits::deallocate(_alloc,_begin,capacity());
+            _begin = new_begin;
+            _end = new_end;
+            _cap = new_capacity;
+            
         }
     public:
         vector()
@@ -189,6 +233,18 @@ namespace atm
         T* end() noexcept {return _end;}
         const T* cap() const noexcept {return _cap;}
         T* cap() noexcept {return _cap;}
+
+        void push_back(const T& value)
+        {
+            if(check_n(1)) _append(value);
+            else _realloc_append(value);
+            
+        }
+        void push_back(T&& value)
+        {
+            if(check_n(1)) _append(std::move(value));
+            else _realloc_append(std::move(value));
+        }
 
         
         
