@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <utility>
 #include <new>
+#include <iterator>
+#include <type_traits>
 namespace atm
 {
     template<typename T, class Alloc = std::allocator<T>>
@@ -77,31 +79,31 @@ namespace atm
                 return std::uninitialized_copy(first, last, dst);
             }
         }
-        void _realloc()
-        {
-            size_type new_capacity_size = this->capacity()>0?2*capacity():15;
-            if(new_capacity_size>traits::max_size(_alloc)) new_capacity_size = traits::max_size(_alloc);
-            T* new_begin = traits::allocate(_alloc,new_capacity_size);
-            T* new_capacity = new_begin+new_capacity_size;
-            T* new_end = nullptr;
-            try
-            {
-                new_end = _migrate(_begin, _end, new_begin);
-            }
-            catch(...)
-            {
-                traits::deallocate(_alloc,new_begin,new_capacity_size);
-                throw;
-            }
-            for(T* i= _begin;i!=_end;i++)
-            {
-                traits::destroy(_alloc,i);
-            }
-            if(_begin!=nullptr) traits::deallocate(_alloc,_begin,capacity());
-            _begin = new_begin;
-            _end = new_end;
-            _cap = new_capacity;
-        }
+        // void _realloc()
+        // {
+        //     size_type new_capacity_size = this->capacity()>0?2*capacity():15;
+        //     if(new_capacity_size>traits::max_size(_alloc)) new_capacity_size = traits::max_size(_alloc);
+        //     T* new_begin = traits::allocate(_alloc,new_capacity_size);
+        //     T* new_capacity = new_begin+new_capacity_size;
+        //     T* new_end = nullptr;
+        //     try
+        //     {
+        //         new_end = _migrate(_begin, _end, new_begin);
+        //     }
+        //     catch(...)
+        //     {
+        //         traits::deallocate(_alloc,new_begin,new_capacity_size);
+        //         throw;
+        //     }
+        //     for(T* i= _begin;i!=_end;i++)
+        //     {
+        //         traits::destroy(_alloc,i);
+        //     }
+        //     if(_begin!=nullptr) traits::deallocate(_alloc,_begin,capacity());
+        //     _begin = new_begin;
+        //     _end = new_end;
+        //     _cap = new_capacity;
+        // }
         template<class U>
         void _append(U&& value)
         {
