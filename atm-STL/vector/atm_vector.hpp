@@ -54,31 +54,46 @@ namespace atm
                 tmp++;
             }
         }
-        friend void _swap(vector &a, vector &b)
+        friend void _swap(vector &a, vector &b) noexcept(std::is_nothrow_swappable_v<Alloc>)
         {
-            std::swap(a._begin,b._begin);
-            std::swap(a._end,b._end);
-            std::swap(a._cap,b._cap);
-            std::swap(a._alloc,b._alloc);
+            using std::swap;
+            swap(a._begin,b._begin);
+            swap(a._end,b._end);
+            swap(a._cap,b._cap);
+            swap(a._alloc,b._alloc);
         }
-        bool check_n(size_type n) noexcept
+        bool _check_n(size_type n) const noexcept
         {
-            return _cap-_end>=n;
+            return static_cast<size_type>(_cap-_end)>=n;
         }
         T* _migrate(T* first, T* last, T* dst)
         {
-            if constexpr (std::is_nothrow_move_constructible_v<T> ||
-                  !std::is_copy_constructible_v<T>)
+            T* cur = dst;
+            try
             {
-                return std::uninitialized_copy(
-                std::make_move_iterator(first),
-                std::make_move_iterator(last),dst);
+                
+                for(;first!=last;first++,cur++)
+                {
+                    if constexpr (std::is_nothrow_move_constructible_v<T> ||
+                            !std::is_copy_constructible_v<T>)
+                    {
+                        traits::construct(_alloc,cur,std::move(*first));
+                    }
+                    else
+                    {
+                        traits::construct(_alloc,cur,*first);
+                    }
+                }
             }
-            else
+            catch(...)
             {
-                return std::uninitialized_copy(first, last, dst);
+                while(cur!=dst){cur--;traits::destroy(_alloc,cur);}
+                throw;
             }
+            return cur;
+            
         }
+
         // void _realloc()
         // {
         //     size_type new_capacity_size = this->capacity()>0?2*capacity():15;
@@ -113,7 +128,12 @@ namespace atm
         template<class U>
         void _realloc_append(U&& value)
         {
-            size_type new_capacity_size = this->capacity()>0?2*capacity():15;
+            size_type max_size = traits::max_size(_alloc);
+            if(max_size - this->capacity()<1) throw std::length_error("atm::vector: size too large");
+            size_type new_capacity_size;
+            if(this->capacity()==0) new_capacity_size = _default_size;
+            else if(this->capacity()>max_size/2) new_capacity_size = max_size;
+            else new_capacity_size = 2*this->capacity();
             T* new_begin = traits::allocate(_alloc,new_capacity_size);
             T* new_capacity = new_begin+new_capacity_size;
             T* new_end = nullptr;
@@ -147,17 +167,12 @@ namespace atm
             
         }
     public:
-        vector()
-        {
-            _begin = traits::allocate(_alloc, _default_size);
-            _end = _begin;
-            _cap = _begin + _default_size;
-        }
+        vector() noexcept(std::is_nothrow_default_constructible_v<Alloc>) = default;
         explicit vector(const size_type n,const T& _default_value = T())
         {
-            size_type alloc_size = n+_default_size;
+            size_type alloc_size = n;
             size_type max_size = traits::max_size(_alloc);
-            if(n + _default_size < n || n + _default_size > max_size)
+            if(n> max_size)
             {
                 throw std::length_error("atm::vector: size too large");
             }
@@ -168,7 +183,7 @@ namespace atm
             {
                 _construct(_begin,_begin+n,_default_value);
                 _end = _begin + n;
-                _cap = _begin + alloc_size;
+                _cap = _end;
             }
             catch(...)
             {
@@ -181,35 +196,42 @@ namespace atm
         :_alloc(traits::select_on_container_copy_construction(other._alloc))
         {
             size_type size = other.size();
-            size_type capacity = other.capacity();
-            _begin = traits::allocate(_alloc,capacity);
-            const T* tmp_other = other.begin();
-            T* tmp = _begin;
-
-            try
+            if(size==0)
             {
-                while(tmp_other!=other.end())
-                {
-                    traits::construct(_alloc,tmp,*tmp_other);
-                    tmp++;
-                    tmp_other++;
-                }
-                _end = _begin+size;
-                _cap = _begin+capacity;
+                _begin = _end = _cap = nullptr;
             }
-            catch(...)
+            else
             {
-                while(tmp!=_begin)
+                _begin = traits::allocate(_alloc,size);
+                const T* tmp_other = other.begin();
+                T* tmp = _begin;
+
+                try
                 {
-                    --tmp;
-                    traits::destroy(_alloc,tmp);
+                    while(tmp_other!=other.end())
+                    {
+                        traits::construct(_alloc,tmp,*tmp_other);
+                        tmp++;
+                        tmp_other++;
+                    }
+                    _end = _begin+size;
+                    _cap = _end;
                 }
-                traits::deallocate(_alloc,_begin,capacity);
-                _begin=_end=_cap=nullptr;
-                throw;
+                catch(...)
+                {
+                    while(tmp!=_begin)
+                    {
+                        --tmp;
+                        traits::destroy(_alloc,tmp);
+                    }
+                    traits::deallocate(_alloc,_begin,size);
+                    _begin=_end=_cap=nullptr;
+                    throw;
+                }
             }
         }
-        vector(vector&& other) noexcept : _alloc(std::move(other._alloc))
+        vector(vector&& other) noexcept(std::is_nothrow_move_constructible_v<Alloc>)
+        : _alloc(std::move(other._alloc))
         {
             _begin = other._begin;
             _end = other._end;
@@ -221,7 +243,7 @@ namespace atm
             _destroy_all();
             if(_begin!=nullptr) traits::deallocate(_alloc,_begin,_cap-_begin);
         }
-        vector& operator=(vector other) noexcept
+        vector& operator=(vector other)
         {
             _swap(*this,other);
             return *this;
@@ -238,13 +260,13 @@ namespace atm
 
         void push_back(const T& value)
         {
-            if(check_n(1)) _append(value);
+            if(_check_n(1)) _append(value);
             else _realloc_append(value);
             
         }
         void push_back(T&& value)
         {
-            if(check_n(1)) _append(std::move(value));
+            if(_check_n(1)) _append(std::move(value));
             else _realloc_append(std::move(value));
         }
 
