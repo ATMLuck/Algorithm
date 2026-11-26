@@ -7,7 +7,6 @@ build/
 bu
 docs/
 *.exe
-*.txt
 *.bat
 *.sh
 temp*
