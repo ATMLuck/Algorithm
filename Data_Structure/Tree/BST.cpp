@@ -1,6 +1,6 @@
 #include <new>
 #include <iostream>
-namespace BST
+namespace atm::BST
 {    
     struct Node
     {

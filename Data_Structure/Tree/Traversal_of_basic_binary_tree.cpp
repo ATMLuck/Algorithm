@@ -1,7 +1,7 @@
-#include "./include/ExampleBinaryTree.hpp"
 #include <stack>
 #include <iostream>
 #include <queue>
+#include "../include/ExampleBinaryTree.hpp"
 
 using namespace std;
 using namespace Example;
